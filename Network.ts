@@ -1,6 +1,10 @@
 import { Matrix } from "ml-matrix";
 import { randn } from "./lib";
 
+(Matrix.prototype as any).shape = function () {
+  return [this.rows, this.columns];
+};
+
 type Tuple = [number, number];
 
 // [Input, Output]
@@ -24,6 +28,7 @@ class Network {
   constructor(sizes: number[], learningRate: number) {
     this.numLayers = sizes.length;
     this.sizes = sizes;
+    this.learningRate = learningRate;
     this.biases = this.getRandomMatrixFromSize(
       sizes.slice(1).map((size: number) => [size, 1])
     );
@@ -85,6 +90,7 @@ class Network {
           i * miniBatchSize,
           (i + 1) * miniBatchSize
         );
+        this.updateMiniBatch(miniBatch);
       }
     }
   }

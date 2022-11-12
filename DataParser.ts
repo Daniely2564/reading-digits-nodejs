@@ -41,6 +41,26 @@ class DataParser {
     }
     return data;
   }
+
+  async getTestingData() {
+    const data: Record<string, number[][]> = {};
+    for (let num of this.testingDirs) {
+      const pathToData = join(this.testingPath, num);
+      const images = fs.readdirSync(pathToData);
+
+      for (const img of images) {
+        const pathToImage = join(pathToData, img);
+
+        const greyScale = await readInputToGreyScale(pathToImage);
+        if (data[num]) data[num].push(greyScale);
+        else {
+          data[num] = [];
+          data[num].push(greyScale);
+        }
+      }
+    }
+    return data;
+  }
 }
 
 function readInputToGreyScale(path: string): Promise<number[]> {
@@ -51,7 +71,7 @@ function readInputToGreyScale(path: string): Promise<number[]> {
       const pixelsToRead = Array.from(Buffer.from(data));
       for (let i = 0; i < pixelsToRead.length / 4; i++) {
         const [r, g, b, a] = pixelsToRead.slice(i * 4, (i + 1) * 4);
-        greyScale.push(Math.ceil(0.2126 * r + 0.7152 * g + 0.0722 * b));
+        greyScale.push(Math.ceil(0.2126 * r + 0.7152 * g + 0.0722 * b) / 255);
       }
       resolve(greyScale);
     });

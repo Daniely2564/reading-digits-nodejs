@@ -125,10 +125,10 @@ class Network {
     );
     // Feed Forward
     let activation: Matrix = x;
-    const activations: Matrix[] = [];
+    const activations: Matrix[] = [x];
 
     const zs: Matrix[] = []; // List to store all the z vectors
-    for (let layer = 0; layer < this.numLayers; layer++) {
+    for (let layer = 0; layer < this.weights.length; layer++) {
       const z = activation
         .mmul(this.weights[layer])
         .addRowVector(this.biases[layer]);

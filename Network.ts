@@ -1,4 +1,5 @@
 import { Matrix } from "ml-matrix";
+import { writeFileSync, readFileSync } from "fs";
 import { randn } from "./lib";
 
 (Matrix.prototype as any).shape = function () {
@@ -33,7 +34,7 @@ class Network {
       sizes.slice(1).map((size: number) => [size, 1])
     );
     this.weights = this.getRandomMatrixFromSize(
-      sizes.slice(1).map((size, index) => [sizes[index], size])
+      sizes.slice(1).map((size, index) => [size, sizes[index]])
     );
   }
 
@@ -60,9 +61,7 @@ class Network {
     let layer = 0;
     let mat = input;
     for (; layer < this.weights.length; layer++) {
-      mat = this.sigmoid(
-        mat.mmul(this.weights[layer]).addRowVector(this.biases[layer])
-      );
+      mat = this.sigmoid(this.weights[layer].mmul(mat).add(this.biases[layer]));
     }
 
     return mat as Matrix;
@@ -92,6 +91,10 @@ class Network {
         );
         this.updateMiniBatch(miniBatch);
       }
+      const evaluation = this.evaluate(trainingData);
+      console.log(
+        `Finished epoch ${epoch + 1}. The evaluation is : ${evaluation}`
+      );
     }
   }
 
@@ -129,9 +132,7 @@ class Network {
 
     const zs: Matrix[] = []; // List to store all the z vectors
     for (let layer = 0; layer < this.weights.length; layer++) {
-      const z = activation
-        .mmul(this.weights[layer])
-        .addRowVector(this.biases[layer]);
+      const z = this.weights[layer].mmul(activation).add(this.biases[layer]);
       zs.push(z);
 
       activation = this.sigmoid(z);
@@ -143,6 +144,7 @@ class Network {
       activations[activations.length - 1],
       y
     ).multiply(this.sigmoidPrime(zs[zs.length - 1]));
+
     nablaBias[nablaBias.length - 1] = delta;
     nablaWeights[nablaWeights.length - 1] = delta.mmul(
       activations[activations.length - 2].transpose()
@@ -164,8 +166,8 @@ class Network {
     return [nablaBias, nablaWeights];
   }
 
-  private costDerivative(outputActivation: Matrix, y: Matrix) {
-    return outputActivation.subtract(y);
+  private costDerivative(outputActivations: Matrix, y: Matrix) {
+    return outputActivations.subtract(y);
   }
 
   private sigmoidPrime(matrix: Matrix) {
@@ -176,8 +178,53 @@ class Network {
 
   sigmoid(matrix: Matrix) {
     return Matrix.ones(matrix.rows, matrix.columns).div(
-      Matrix.ones(matrix.rows, matrix.columns).add(Matrix.exp(matrix))
+      Matrix.ones(matrix.rows, matrix.columns).add(
+        Matrix.exp(matrix.multiply(-1))
+      )
     );
+  }
+
+  evaluate(batches: Batch[]) {
+    let corrs = 0;
+    for (const [x, y] of batches) {
+      const predictedOutput = this.feedforward(x).maxColumnIndex(0)[0];
+      const actualOutput = y.maxColumnIndex(0)[0];
+      if (predictedOutput === actualOutput) corrs++;
+    }
+
+    return corrs / batches.length;
+  }
+
+  save(filename: string) {
+    const weights = this.weights.map((w) => w.toJSON());
+    const biases = this.biases.map((b) => b.toJSON());
+
+    const learningRate = this.learningRate;
+    const sizes = this.sizes;
+    const layers = this.numLayers;
+
+    writeFileSync(
+      `./savedLogs/${filename}`,
+      JSON.stringify({
+        sizes,
+        layers,
+        learningRate,
+        weights,
+        biases,
+      })
+    );
+  }
+
+  static load(filename: string) {
+    const data = JSON.parse(
+      readFileSync(`./savedLogs/${filename}`, { encoding: "utf-8" })
+    );
+    const newNetwork = new Network(data.sizes, data.learningRate);
+    newNetwork.numLayers = data.layers;
+    newNetwork.weights = data.weights.map((weight: any) => new Matrix(weight));
+    newNetwork.biases = data.biases.map((bias: any) => new Matrix(bias));
+
+    return newNetwork;
   }
 }
 

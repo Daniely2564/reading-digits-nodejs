@@ -5,10 +5,11 @@ import Network from "./Network";
 async function main() {
   const dp = new DataParser("./datasets");
   const dmp = new DataMatrixParser(dp);
-  const td = await dmp.testingData(true);
-  const network = new Network([784, 15, 10], 0.1);
-  //   const res = network.feedforward(data[0]);
-  network.SGD(td, 1, 50);
+  const td = await dmp.testingData();
+  // const network = new Network([784, 36, 10], 0.1); // Initial way if no previous learning
+  const network = Network.load("test-log-with-training-data.json");
+  // network.SGD(td, 30, 50);
+  console.log(network.evaluate(td));
 }
 
 /**

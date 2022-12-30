@@ -22,7 +22,10 @@ class DataMatrixParser {
       const output = new Array(10).fill(0);
       output[parseInt(num)] = 1;
       for (const greyScale of trainingData[num]) {
-        matrixDataTuples.push([new Matrix([greyScale]), new Matrix([output])]);
+        matrixDataTuples.push([
+          new Matrix([greyScale]).transpose(),
+          new Matrix([output]).transpose(),
+        ]);
       }
     }
     if (randomize) {
@@ -38,7 +41,10 @@ class DataMatrixParser {
       const output = new Array(10).fill(0);
       output[parseInt(num)] = 1;
       for (const greyScale of testingData[num]) {
-        matrixDataTuples.push([new Matrix([greyScale]), new Matrix([output])]);
+        matrixDataTuples.push([
+          new Matrix([greyScale]).transpose(),
+          new Matrix([output]).transpose(),
+        ]);
       }
     }
     if (randomize) {
